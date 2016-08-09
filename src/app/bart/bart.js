@@ -1,173 +1,123 @@
 class BartService {
   constructor($indexedDB) {
     this.$indexedDB = $indexedDB;
-    this.stops = [];
-    this.lines = [];
-    this.timetables = [];
-    this.stopSchedules = new Map();
 
-    initTransitDb();
+    this.initTransitDb();
   }
 
   getStops() {
     const url = `${apiUrl}/stops?${apiKey}${op}`;
 
-    if (this.stops.length === 0) {
-      return fetch(url)
-      .then(res => {
-        return res.json();
-      }).then(stops => {
-        this.stops = stops.Contents.dataObjects.ScheduledStopPoint;
-
-        this.$indexedDB.openStore('stops', store => {
-          store.insert(this.stops).then(e => {
-            // do something
-            console.log(`Added stops to db`);
-          }).catch(err => {
-            return Error(err);
-          });
-        });
-        return this.stops;
-      }).catch(err => {
-        return Error(err);
+    this.$indexedDB.openStore('stops', store => {
+          // single item
+      store.getAll().then(stops => {
+        // Update scope
+        console.log("stored dsops: "+stops.length);
+        return stops;
       });
-    }
-    console.log("stores stops");
-    return this.stops;
+    });
+
+    return fetch(url)
+    .then(res => {
+      return res.json();
+    }).then(stops => {
+      this.stops = stops.Contents.dataObjects.ScheduledStopPoint;
+
+      this.$indexedDB.openStore('stops', store => {
+        store.insert(this.stops).then(e => {
+          // do something
+          console.log(`Added stops to db`);
+        }).catch(err => {
+          return Error(err);
+        });
+      });
+      return this.stops;
+    }).catch(err => {
+      return Error(err);
+    });
   }
 
   getStopSchedule(stopId) {
     const url = `${apiUrl}/stoptimetable?${apiKey}&OperatorRef=BART&MonitoringRef=${stopId}`;
 
-    // if stopId not in this.stopSchedules.keys()
-    return fetch(url).then(res => {
-      return res.json();
-    }).then(times => {
-      return times;
-    }).catch(err => {
-      return Error(err);
-    });
-  }
-
-  getLines() {
-    const url = `${apiUrl}/lines?${apiKey}${op}`;
-
-    if (this.lines.length === 0) {
-      return fetch(url)
-      .then(res => {
-        return res.json();
-      }).then(lines => {
-        this.lines = lines;
-        this.$indexedDB.openStore('lines', store => {
-          store.insert(this.lines).then(e => {
-            // do something
-            console.log(`Added lines to db`);
-          }).catch(err => {
-            return Error(err);
-          });
-        });
-        return lines;
+    this.$indexedDB.openStore('scheduledStops', store => {
+      store.find(stopId).then(schedule => {
+        return schedule;
       }).catch(err => {
         return Error(err);
       });
-    }
-    console.log("stored lines");
-    return this.lines;
+    });
+
+    return fetch(url).then(res => {
+      return res.json();
+    }).then(schedule => {
+      const scheduleItems = schedule.Siri.ServiceDelivery.StopTimetableDelivery.TimetabledStopVisit.map(stop => {
+        const data = stop.TargetedVehicleJourney;
+        return {LineRef: data.LineRef,
+                DatedVehicleJourneyRef: data.DatedVehicleJourneyRef,
+                ArrivalTime: data.TargetedCall.AimedArrivalTime,
+                DepartureTime: data.TargetedCall.AimedDepartureTime
+        };
+      });
+
+      const scheduleObject = {stopId, schedule: scheduleItems};
+
+      this.$indexedDB.openStore('scheduledStops', store => {
+        store.insert(scheduleObject).then(e => {
+          console.log(`Added scheule to db`);
+        }).catch(err => {
+          return Error(err);
+        });
+      });
+
+      return scheduleObject;
+    }).catch(err => {
+      return Error(err);
+    });
   }
 
   getPattern(lineId) {
     const url = `${apiUrl}/patterns?${apiKey}${op}&line_id=${lineId}`;
+
+    this.$indexedDB.openStore('patterns', store => {
+      store.find(lineId).then(pattern => {
+        return pattern;
+      }).catch(err => {
+        return Error(err);
+      });
+    });
+
     return fetch(url)
     .then(res => {
       return res.json();
     }).then(pattern => {
-      console.log(pattern);
-      return pattern;
+      this.$indexedDB.openStore('patterns', store => {
+        store.insert({lineId, pattern: pattern.journeyPatterns}).then(e => {
+
+        }).catch(err => {
+          return Error(err);
+        });
+      });
+
+      return pattern.journeyPatterns;
     }).catch(err => {
       return Error(err);
     });
   }
 
-  getTimetable(lineId) {
-    const url = `${apiUrl}/timetable?${apiKey}${op}&line_id=${lineId}`;
-
-    if (this.lines.length === 0) {
-      return fetch(url)
-      .then(res => {
-        return res.json();
-      }).then(timetable => {
-        /* this.lines = lines;
-        this.$indexedDB.openStore('lines', store => {
-          store.insert(this.lines).then(e => {
-            // do something
-            console.log(`Added lines to db`);
-          }).catch(err => {
-            return Error(err);
-          });
-        });
-        return lines;
-        */
-        console.log(timetable);
-      }).catch(err => {
-        return Error(err);
-      });
-    }
-    console.log("stored lines");
-    return this.lines;
-  }
-
   initTransitDb() {
-    /* this.getStops().then(stops => {
+    this.getStops().then(stops => {
       console.log("STOPS");
       console.log(stops);
-    }); */
-    this.getLines().then(lines => {
-      console.log("LINES");
-      console.log(lines);
-      return lines;
-    }).then(lines => {
-      /* console.log("PATTERNS");
-      lines.forEach(line => {
-        this.getPattern(line.Id).then(pattern => {
-          console.log(line.Id);
-          console.log(pattern);
-        });
-      });*/
     });
 
-    this.getStopSchedule("12018504").then(res => {
-      console.log(res);
-    });
-    /* .then(lines => {
-      lines.forEach(line => {
-        getPattern(line);
-      });
-    });*/
-    this.$indexedDB.openStore('stops', store => {
-          // single item
-      store.getAll().then(stops => {
-        // Update scope
-        this.stops = stops;
-        console.log("stored dsops: "+this.stops.length);
-      });
-    }).then(() => {
-      console.log("GETTING");
-      this.getStops();
+    this.getPattern("OAKL/COLS").then(pattern => {
+      console.log("SDF");
+      console.log(pattern);
     });
 
-    this.$indexedDB.openStore('lines', store => {
-        // single item
-      store.getAll().then(lines => {
-        // Update scope
-        this.lines = lines;
-        console.log("stored lines: "+this.lines.length);
-      });
-    }).then(() => {
-      console.log("GETTING lines");
-      this.getLines();
+    this.getStopSchedule("12018501").then(sched => {
+      console.log(sched);
     });
-
-    this.getTimetable("FREMONT/DALY");
-    this.getPattern("BAY PT/SFIA");
   }
 }

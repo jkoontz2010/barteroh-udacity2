@@ -7,8 +7,10 @@ angular
       .upgradeDatabase(1, (event, db) => {
         db.createObjectStore('stops', {keyPath: 'id'});
         db.createObjectStore('lines', {keyPath: 'Id'});
-        const patternStore = db.createObjectStore('patterns');
+        db.createObjectStore('patterns', {keyPath: 'lineId'});
 
         db.createObjectStore('scheduledStops', {keyPath: 'stopId'});
+        db.createObjectStore('savedSchedules');
+        db.createObjectStore('savedTransferRoutes');
       });
   });
