@@ -8,9 +8,7 @@ angular
         db.createObjectStore('stops', {keyPath: 'id'});
         db.createObjectStore('lines', {keyPath: 'Id'});
         const patternStore = db.createObjectStore('patterns');
-        patternStore.createIndex('stop', 'ScheduledStopPointRef', {unique: false});
 
-        db.createObjectStore('test');
-        // objStore.createIndex('age_idx', 'age', {unique: false});
+        db.createObjectStore('scheduledStops', {keyPath: 'stopId'});
       });
   });

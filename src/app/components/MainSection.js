@@ -2,7 +2,6 @@ class MainSection {
   /** @ngInject */
   constructor(bartService, $indexedDB) {
     this.bartService = bartService;
-    this.selectedFilter = visibilityFilters[this.filter];
     this.$indexedDB = $indexedDB;
     this.updateIdb();
   }
@@ -25,9 +24,5 @@ angular
   .module('app')
   .component('mainSection', {
     templateUrl: 'app/components/MainSection.html',
-    controller: MainSection,
-    bindings: {
-      todos: '=',
-      filter: '<'
-    }
+    controller: MainSection
   });

@@ -1,4 +1,4 @@
-describe('MainSection component', () => {
+/* describe('MainSection component', () => {
   class MockTodoService {
     addTodo() {}
     editTodo() {}
@@ -72,3 +72,4 @@ describe('MainSection component', () => {
     expect(component.todoService.deleteTodo).toHaveBeenCalled();
   });
 });
+*/
