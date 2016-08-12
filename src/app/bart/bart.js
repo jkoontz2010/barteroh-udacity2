@@ -129,52 +129,31 @@ class BartService {
         };
       });
       */
-    let depLines = new Set();
-    let arrLines = new Set();
 
-    let depLinePatterns = new Map();
-    let arrLinePatterns = new Map();
+    let routes = new Map();
 
-    return this.getStopSchedule(departStopId).then(schedule => {
-      schedule.forEach(sched => {
-        depLines.add(sched.LineRef);
-      });
-      console.log(depLines);
+    return Promise.all([this.getStopSchedule(departStopId), this.getStopSchedule(arriveStopId)]).then(schedules => {
+      console.table(schedules[0]);
+      console.table(schedules[1]);
+      schedules[0].forEach(sched => {
+        let journey = sched.DatedVehicleJourneyRef;
+        let depTime = new Date(sched.DepartureTime);
 
-      let patternPromises = [];
-      depLines.forEach(line => {
-        patternPromises.push(this.getPattern(line));
-        console.log("!");
-      });
+        for (let sched2 of schedules[1]) {
+          let journey2 = sched2.DatedVehicleJourneyRef;
+          let arrTime = new Date(sched2.ArrivalTime);
 
-      Promise.all(promises).then(() => {
-        let lineMatches = this.connectDepartToArrive(departStopId, depLinePatterns, arriveStopId);
-        console.log(depLinePatterns);
-        return schedule.filter(sched => {
-          return lineMatches.indexOf(sched.LineRef) !== -1;
-        });
+          if (journey2 === journey && depTime < arrTime) {
+            routes.set(sched.DepartureTime, { Line: sched.LineRef, ArrivalTime: arrTime});
+            break;
+          }
+        }
       });
 
-      return patternPromises;
+      return routes;
     }).catch(error => {
       return Error(error);
     });
-/*
-    // if no connected patterns, then grab arrival lines and see where we canf ind a match
-    const arrSchedule = this.getStopSchedule(arriveStopId).then(schedule => {
-      schedule.forEach(sched => {
-        arrLines.add(sched.LineRef);
-      });
-
-      arrLines.forEach(line => {
-        this.getPattern(line).then(pattern => {
-          arrLinePatterns.set(line, pattern);
-        });
-      });
-    });
-*/
-    // Promise.all the above
-
   }
   /*
   * Removes old schedules and retrieves new ones for line(s) once present in IndexedDB if schedule is empty
@@ -201,10 +180,12 @@ class BartService {
   initTransitDb() {
     this.cleanStopSchedules();
     this.getStops().then(stops => { console.log(stops); });
-    this.getStopSchedule("12018501").then(res => {console.log(res);});
+    this.getStopSchedule("12018506").then(res => {console.log(res);});
 
-    /*this.getRoute("12018501", "12018504").then(result => {
+    console.time("start");
+    this.getRoute("12018502", "12018518").then(result => {
       console.log(result);
-    });*/
+      console.timeEnd("start");
+    }); 
   }
 }
