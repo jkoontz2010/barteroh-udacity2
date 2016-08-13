@@ -134,35 +134,22 @@ class BartService {
     return matches;
   }
   getRoute(departStopId, arriveStopId) {
-    /*
-        return {LineRef: data.LineRef,
-                DatedVehicleJourneyRef: data.DatedVehicleJourneyRef,
-                ArrivalTime: data.TargetedCall.AimedArrivalTime,
-                DepartureTime: data.TargetedCall.AimedDepartureTime
-        };
-      });
-      */
-
     let routes = new Map();
 
     return Promise.all([this.getStopSchedule(departStopId), this.getStopSchedule(arriveStopId)]).then(schedules => {
-      console.table(schedules[0]);
-      console.table(schedules[1]);
       schedules[0].forEach(sched => {
-        let journey = sched.DatedVehicleJourneyRef;
-        let depTime = new Date(sched.DepartureTime);
+        // the key is the journey ref
+        const schedKey = Object.keys(sched)[0];
 
-        for (let sched2 of schedules[1]) {
-          let journey2 = sched2.DatedVehicleJourneyRef;
-          let arrTime = new Date(sched2.ArrivalTime);
+        if (schedules[1][schedKey] !== undefined) {
+          let depTime = new Date(sched[schedKey].DepartureTime);
+          let arrTime = new Date(schedules[1][schedKey].ArrivalTime);
 
-          if (journey2 === journey && depTime < arrTime) {
-            routes.set(sched.DepartureTime, { Line: sched.LineRef, ArrivalTime: arrTime});
-            break;
+          if (depTime < arrTime) {
+            routes.set(sched.DepartureTime, {Line: sched.LineRef, ArrivalTime: arrTime});
           }
         }
       });
-
       return routes;
     }).catch(error => {
       return Error(error);
@@ -202,13 +189,11 @@ class BartService {
 
   initTransitDb() {
     this.cleanStopSchedules();
-    this.getStops().then(stops => { console.log(stops); });
+    //this.getStops().then(stops => { console.log(stops); });
     //this.getStopSchedule("12018504").then(res => {console.log(res);});
-/*
-    console.time("start");
+
     this.getRoute("12018502", "12018518").then(result => {
       console.log(result);
-      console.timeEnd("start");
-    });  */
+    });
   }
 }
