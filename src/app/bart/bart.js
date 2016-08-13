@@ -5,73 +5,94 @@ class BartService {
     this.initTransitDb();
   }
 
+  storeStops(apiResult) {
+    const stopPoints = apiResult.Contents.dataObjects.ScheduledStopPoint;
+
+    this.$indexedDB.openStore('stops', store => {
+      store.insert(stopPoints).then(e => {
+        return stopPoints;
+      }).catch(err => {
+        return Error(err);
+      });
+    });
+
+    return stopPoints;
+  }
   getStops() {
     const url = `${apiUrl}/stops?${apiKey}${op}`;
 
     return this.$indexedDB.openStore('stops', store => {
       return store.getAll();
     }).then(stops => {
-      if (stops !== undefined) {
+      if (stops !== undefined && stops.length > 0) {
         return stops;
       }
 
       return fetch(url).then(res => {
         return res.json();
       }).then(stops => {
-        const stopPoints = stops.Contents.dataObjects.ScheduledStopPoint;
-
-        this.$indexedDB.openStore('stops', store => {
-          store.insert(stopPoints).then(e => {
-            return stopPoints;
-          }).catch(err => {
-            return Error(err);
-          });
-        });
-        return stopPoints;
+        return this.storeStops(stops);
       }).catch(err => {
         return Error(err);
       });
     });
   }
 
+  storeStopSchedule(apiResult, stopId) {
+    const scheduleItems = apiResult.Siri.ServiceDelivery.StopTimetableDelivery.TimetabledStopVisit.map(stop => {
+      const data = stop.TargetedVehicleJourney;
+      const journey = data.DatedVehicleJourneyRef;
+      const sched = {};
+
+      sched[journey] = {LineRef: data.LineRef,
+              ArrivalTime: data.TargetedCall.AimedArrivalTime,
+              DepartureTime: data.TargetedCall.AimedDepartureTime
+      };
+
+      return sched;
+    });
+
+    const scheduleObject = {stopId, schedule: scheduleItems};
+
+    this.$indexedDB.openStore('scheduledStops', store => {
+      store.insert(scheduleObject).then(e => {
+      }).catch(err => {
+        return Error(err);
+      });
+    });
+
+    return scheduleItems;
+  }
+
   getStopSchedule(stopId) {
     const url = `${apiUrl}/stoptimetable?${apiKey}&OperatorRef=BART&MonitoringRef=${stopId}`;
-    const now = new Date();
 
     return this.$indexedDB.openStore('scheduledStops', store => {
       return store.find(stopId);
     }).then(schedule => {
-
-      return schedule.schedule.filter(item => new Date(item.ArrivalTime) > now);
+      return this.getFutureDatesOnly(schedule);
     }).catch(err => {
       // thanks to angular indexedDB library, an error is thrown when store.find() returns nothing
       return fetch(url).then(res => {
         return res.json();
       }).then(schedule => {
-        const scheduleItems = schedule.Siri.ServiceDelivery.StopTimetableDelivery.TimetabledStopVisit.map(stop => {
-          const data = stop.TargetedVehicleJourney;
-
-          return {LineRef: data.LineRef,
-                  DatedVehicleJourneyRef: data.DatedVehicleJourneyRef,
-                  ArrivalTime: data.TargetedCall.AimedArrivalTime,
-                  DepartureTime: data.TargetedCall.AimedDepartureTime
-          };
-        });
-
-        const scheduleObject = {stopId, schedule: scheduleItems};
-
-        this.$indexedDB.openStore('scheduledStops', store => {
-          store.insert(scheduleObject).then(e => {
-          }).catch(err => {
-            return Error(err);
-          });
-        });
-
-        return scheduleItems;
+        return this.storeStopSchedule(schedule, stopId);
       }).catch(err => {
         return Error(err);
       });
     });
+  }
+
+  storePattern(apiResult, lineId) {
+    this.$indexedDB.openStore('patterns', store => {
+      store.insert({lineId, pattern: apiResult.journeyPatterns}).then(e => {
+
+      }).catch(err => {
+        return Error(err);
+      });
+    });
+
+    return apiResult.journeyPatterns;
   }
 
   getPattern(lineId) {
@@ -88,15 +109,7 @@ class BartService {
       .then(res => {
         return res.json();
       }).then(pattern => {
-        this.$indexedDB.openStore('patterns', store => {
-          store.insert({lineId, pattern: pattern.journeyPatterns}).then(e => {
-
-          }).catch(err => {
-            return Error(err);
-          });
-        });
-
-        return pattern.journeyPatterns;
+        return this.storePattern(pattern);
       }).catch(err => {
         return Error(err);
       });
@@ -161,9 +174,8 @@ class BartService {
   cleanStopSchedules() {
     this.$indexedDB.openStore('scheduledStops', store => {
       store.getAll().then(schedules => {
-        const now = new Date();
         schedules.forEach(schedule => {
-          const sched = schedule.schedule.filter(item => new Date(item.ArrivalTime) > now);
+          const sched = this.getFutureDatesOnly(schedule);
 
           if (sched.length === 0) {
             store.delete(schedule.stopId);
@@ -177,15 +189,26 @@ class BartService {
     });
   }
 
+  getFutureDatesOnly(schedule) {
+    const now = new Date();
+    return schedule.schedule.filter(journey => {
+      const jdate = new Date(journey[Object.keys(journey)[0]].ArrivalTime);
+
+      if (now < jdate) {
+        return journey;
+      }
+    });
+  }
+
   initTransitDb() {
     this.cleanStopSchedules();
     this.getStops().then(stops => { console.log(stops); });
-    this.getStopSchedule("12018506").then(res => {console.log(res);});
-
+    //this.getStopSchedule("12018504").then(res => {console.log(res);});
+/*
     console.time("start");
     this.getRoute("12018502", "12018518").then(result => {
       console.log(result);
       console.timeEnd("start");
-    }); 
+    });  */
   }
 }
