@@ -39,17 +39,16 @@ class BartService {
   }
 
   storeStopSchedule(apiResult, stopId) {
-    const scheduleItems = apiResult.Siri.ServiceDelivery.StopTimetableDelivery.TimetabledStopVisit.map(stop => {
+    let scheduleItems = new Object();
+
+    apiResult.Siri.ServiceDelivery.StopTimetableDelivery.TimetabledStopVisit.forEach(stop => {
       const data = stop.TargetedVehicleJourney;
       const journey = data.DatedVehicleJourneyRef;
-      const sched = {};
 
-      sched[journey] = {LineRef: data.LineRef,
+      scheduleItems[journey] = {LineRef: data.LineRef,
               ArrivalTime: data.TargetedCall.AimedArrivalTime,
               DepartureTime: data.TargetedCall.AimedDepartureTime
       };
-
-      return sched;
     });
 
     const scheduleObject = {stopId, schedule: scheduleItems};
@@ -119,12 +118,10 @@ class BartService {
   connectDepartToArrive(departStopId, departLinePatterns, arriveStopId) {
     let matches = [];
     departLinePatterns.forEach((pattern, lineId) => {
-      //console.log(`PATTERN`);
-      //console.log(pattern);
+
       for (let stop of pattern[0].PointsInSequence.TimingPointInJourneyPattern) {
         if (stop.ScheduledStopPointRef === arriveStopId) {
           matches.push(lineId);
-
         }
       }
 
@@ -137,16 +134,15 @@ class BartService {
     let routes = new Map();
 
     return Promise.all([this.getStopSchedule(departStopId), this.getStopSchedule(arriveStopId)]).then(schedules => {
-      schedules[0].forEach(sched => {
+      Object.keys(schedules[0]).forEach(schedKey => {
         // the key is the journey ref
-        const schedKey = Object.keys(sched)[0];
 
         if (schedules[1][schedKey] !== undefined) {
-          let depTime = new Date(sched[schedKey].DepartureTime);
+          let depTime = new Date(schedules[0][schedKey].DepartureTime);
           let arrTime = new Date(schedules[1][schedKey].ArrivalTime);
 
           if (depTime < arrTime) {
-            routes.set(sched.DepartureTime, {Line: sched.LineRef, ArrivalTime: arrTime});
+            routes.set(depTime, {Line: schedules[0][schedKey].LineRef, ArrivalTime: arrTime});
           }
         }
       });
@@ -178,21 +174,22 @@ class BartService {
 
   getFutureDatesOnly(schedule) {
     const now = new Date();
-    return schedule.schedule.filter(journey => {
-      const jdate = new Date(journey[Object.keys(journey)[0]].ArrivalTime);
+    Object.keys(schedule.schedule).forEach(schedKey => {
+      const jdate = new Date(schedule.schedule[schedKey].ArrivalTime);
 
-      if (now < jdate) {
-        return journey;
+      if (now > jdate) {
+        delete schedule.schedule[schedKey];
       }
     });
+
+    return schedule.schedule;
   }
 
   initTransitDb() {
     this.cleanStopSchedules();
-    //this.getStops().then(stops => { console.log(stops); });
-    //this.getStopSchedule("12018504").then(res => {console.log(res);});
-
-    this.getRoute("12018502", "12018518").then(result => {
+    // this.getStops().then(stops => { console.log(stops); });
+    // this.getStopSchedule("12018504").then(res => {console.log(res);});
+    this.getRoute("12018502", "12018504").then(result => {
       console.log(result);
     });
   }
