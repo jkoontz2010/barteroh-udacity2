@@ -39,7 +39,7 @@ function build() {
     .pipe(jsFilter.restore)
     .pipe(cssFilter)
     .pipe(sourcemaps.init())
-    .pipe(cssnano())
+    //.pipe(cssnano())
     .pipe(rev())
     .pipe(sourcemaps.write('maps'))
     .pipe(cssFilter.restore)

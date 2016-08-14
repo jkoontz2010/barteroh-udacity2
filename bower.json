@@ -4,16 +4,18 @@
   "dependencies": {
     "angular": "^1.5.0",
     "angular-ui-router": "^0.3.1",
-    "todomvc-app-css": "^2.0.4",
     "jszip": "Stuk/jszip#^3.0.0",
-    "angular-indexedDB": "angular-indexed-db#^1.1.4"
+    "angular-indexedDB": "angular-indexed-db#^1.1.4",
+    "bootstrap-sass": "^3.3.7"
   },
   "devDependencies": {
     "angular-mocks": "^1.5.0"
   },
   "overrides": {
-    "todomvc-app-css": {
-      "main": "index.css"
+    "bootstrap": {
+      "main": [
+        "dist/css/bootstrap.css"
+      ]
     }
   },
   "resolutions": {
