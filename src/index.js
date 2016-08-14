@@ -10,7 +10,7 @@ angular
         db.createObjectStore('patterns', {keyPath: 'lineId'});
 
         db.createObjectStore('scheduledStops', {keyPath: 'stopId'});
-        db.createObjectStore('savedSchedules');
+        db.createObjectStore('savedSchedules', {keyPath: 'departStop'});
         db.createObjectStore('savedTransferRoutes');
       });
   });

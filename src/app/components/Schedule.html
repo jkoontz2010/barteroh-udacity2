@@ -1,0 +1,24 @@
+<div class="text-center" ng-if="$ctrl.selectedStops.length == 0"><h4>View this schedule offline by pressing View Saved!</h4></div><br>
+<div class="text-center bart-stations" ng-if="$ctrl.selectedStops.length > 0"><h3>{{$ctrl.selectedStops[0] | bartStop}} to {{$ctrl.selectedStops[1] |bartStop}}</h3></div>
+<br>
+<div ng-repeat="(departTime, journeyInfo) in $ctrl.scheduleItems">
+	<div class="row" >
+		<div class="col-xs-5 col-xs-offset-0 col-sm-2 col-sm-offset-4">{{journeyInfo.Line}}</div>
+		<div class="col-xs-2 col-xs-offset-2 col-sm-1 col-sm-offset-0 text-right">Depart:</div>
+		<div class="col-xs-3 col-sm-2">{{departTime | date: "shortTime"}}</div>
+	</div>
+	<div class="row">
+		<div class="col-xs-offset-7 col-xs-2 col-sm-offset-6 col-sm-1 text-right">Arrive:</div>
+		<div class="col-xs-3 col-sm-2">{{journeyInfo.ArrivalTime | date: "shortTime"}}</div>		
+	</div>
+	<hr>
+</div>
+
+
+
+<!--
+
+FREMONT/DALY        Depart: 2:35pm
+  (25 min)          Arrive: 3:00pm
+
+-->

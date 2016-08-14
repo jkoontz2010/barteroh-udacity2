@@ -1,6 +1,8 @@
 class BartService {
   constructor($indexedDB) {
     this.$indexedDB = $indexedDB;
+    this.scheduleResults = [];
+    this.selectedStops = [];
 
     this.initTransitDb();
   }
@@ -17,6 +19,15 @@ class BartService {
     });
 
     return stopPoints;
+  }
+  getStopName(stopId) {
+    return this.$indexedDB.openStore('stops', store => {
+      return store.find(stopId).then(stop => {
+        return stop.Name;
+      }).catch(err => {
+        return Error(err);
+      });
+    });
   }
   getStops() {
     const url = `${apiUrl}/stops?${apiKey}${op}`;
@@ -66,20 +77,20 @@ class BartService {
   getStopSchedule(stopId) {
     const url = `${apiUrl}/stoptimetable?${apiKey}&OperatorRef=BART&MonitoringRef=${stopId}`;
 
-    return this.$indexedDB.openStore('scheduledStops', store => {
+   /* return this.$indexedDB.openStore('scheduledStops', store => {
       return store.find(stopId);
     }).then(schedule => {
       return this.getFutureDatesOnly(schedule);
-    }).catch(err => {
+    }).catch(err => { */
       // thanks to angular indexedDB library, an error is thrown when store.find() returns nothing
-      return fetch(url).then(res => {
-        return res.json();
-      }).then(schedule => {
-        return this.storeStopSchedule(schedule, stopId);
-      }).catch(err => {
-        return Error(err);
-      });
+    return fetch(url).then(res => {
+      return res.json();
+    }).then(schedule => {
+      return this.storeStopSchedule(schedule, stopId);
+    }).catch(err => {
+      return Error(err);
     });
+    // });
   }
 
   storePattern(apiResult, lineId) {
@@ -124,32 +135,70 @@ class BartService {
           matches.push(lineId);
         }
       }
-
     });
 
     console.log(matches);
     return matches;
   }
   getRoute(departStopId, arriveStopId) {
-    let routes = new Map();
+    let routes = new Object();
+    this.selectedStops = [];
 
     return Promise.all([this.getStopSchedule(departStopId), this.getStopSchedule(arriveStopId)]).then(schedules => {
       Object.keys(schedules[0]).forEach(schedKey => {
         // the key is the journey ref
 
         if (schedules[1][schedKey] !== undefined) {
-          let depTime = new Date(schedules[0][schedKey].DepartureTime);
-          let arrTime = new Date(schedules[1][schedKey].ArrivalTime);
+          let depTime = new Date(schedules[0][schedKey].DepartureTime).getTime();
+          let arrTime = new Date(schedules[1][schedKey].ArrivalTime).getTime();
 
           if (depTime < arrTime) {
-            routes.set(depTime, {Line: schedules[0][schedKey].LineRef, ArrivalTime: arrTime});
+            routes[depTime] = {Line: schedules[0][schedKey].LineRef, ArrivalTime: arrTime};
           }
         }
       });
-      return routes;
+      const orderedRoutes = {};
+      Object.keys(routes).sort().forEach(key => {
+        orderedRoutes[key] = routes[key];
+      });
+
+      this.scheduleResults = orderedRoutes;
+      this.storeRoutes(departStopId, arriveStopId, orderedRoutes);
+      return orderedRoutes;
     }).catch(error => {
       return Error(error);
     });
+  }
+  storeRoutes(departStop, arriveStop, routes) {
+    this.$indexedDB.openStore('savedSchedules', store => {
+      store.clear().then(() => {
+        store.insert({departStop, arriveStop, routes}).then(e => {
+
+        }).catch(err => {
+          return Error(err);
+        });
+      });
+    });
+  }
+  getSavedRoutes() {
+    return this.$indexedDB.openStore('savedSchedules', store => {
+      return store.getAll();
+    }).then(storedRoutes => {
+      this.scheduleResults = storedRoutes[0].routes;
+
+      return Promise.all([this.getStopName(storedRoutes[0].arriveStop), this.getStopName(storedRoutes[0].departStop)]).then(names => {
+        this.selectedStops = [names[0], names[1]];
+        return this.scheduleResults;
+      });
+    }).catch(err => {
+      return [];
+    });
+  }
+  getRoutes() {
+    return this.scheduleResults;
+  }
+  getSelectedStops() {
+    return this.selectedStops;
   }
   /*
   * Removes old schedules and retrieves new ones for line(s) once present in IndexedDB if schedule is empty
@@ -187,10 +236,6 @@ class BartService {
 
   initTransitDb() {
     this.cleanStopSchedules();
-    // this.getStops().then(stops => { console.log(stops); });
-    // this.getStopSchedule("12018504").then(res => {console.log(res);});
-    this.getRoute("12018502", "12018504").then(result => {
-      console.log(result);
-    });
+
   }
 }

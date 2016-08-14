@@ -1,7 +1,44 @@
-<h1>BARTesdfrOh!</h1>
-<h2>Save your online route <br>for your offline commute</h2>
-<div class="well">
-	<div class="row">
-		
+<h1 class="text-center">BARTerOh!</h1>
+<h3 class="text-center">Save your online route for your offline commute</h3>
+<div class="container">
+	<div class="well well-lg">
+		<form ng-submit="$ctrl.getRoute()" class="form-horizontal schedule-form">
+			<div class="row">
+				<div class="form-group">
+					<div class="col-sm-offset-4 col-xs-1 text-right">
+						<label for="fromStation" class="control-label">From</label>
+					</div>
+					<div class="col-sm-3">
+						<select class="form-control" id="fromStation" ng-model="$ctrl.fromStation">
+							<option ng-repeat="stop in $ctrl.stops" value="{{stop.id}}">{{stop.Name | bartStop}}</option>
+						</select>
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="form-group">
+					
+					<div class="col-sm-offset-4 col-xs-1 text-right">
+						<label for="toStation" class="control-label">To</label>
+					</div>
+					<div class="col-sm-3">
+						<select class="form-control" id="toStation" ng-model="$ctrl.toStation">
+							<option ng-repeat="stop in $ctrl.stops" value="{{stop.id}}">{{stop.Name | bartStop}}</option>
+						</select>
+					</div>
+				</div>
+
+
+			</div>
+			<div class="row">
+				<div class="col-sm-offset-6">
+					<button type="button" class="btn btn-info" ng-click="$ctrl.viewSaved()">View Saved</button>
+					<button type="submit" class="btn btn-default">Submit</button>
+				</div>
+			</div>
+			
+		</form>
+		<schedule ng-if="$ctrl.hasRoutes"></schedule>
+		<schedule ng-if="$ctrl.showOffline"></schedule>
 	</div>
 </div>
