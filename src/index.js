@@ -11,6 +11,5 @@ angular
 
         db.createObjectStore('scheduledStops', {keyPath: 'stopId'});
         db.createObjectStore('savedSchedules', {keyPath: 'departStop'});
-        db.createObjectStore('savedTransferRoutes');
       });
   });

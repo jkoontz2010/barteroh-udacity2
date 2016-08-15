@@ -22,6 +22,13 @@
 
   <body ng-app="app">
     <ui-view></ui-view>
+      <script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then(function() { 
+    console.log("Service Worker Registered"); 
+  });
+}
+</script>
   </body>
 
   <!-- build:js({.tmp,src}) scripts/vendor.js -->
@@ -38,5 +45,7 @@
   <!-- angular templates will be automatically converted in js and inserted here -->
   <!-- endinject -->
   <!-- endbuild -->
+
+
 </html>
 
