@@ -1,0 +1,12 @@
+I used sw-precache for the Service Worker. Documentation used: https://codelabs.developers.google.com/codelabs/sw-precache/index.html
+
+I used FountainJS as a scaffolding for the build process: http://fountainjs.io/
+
+BART API used for the data: http://511.org/developers/list/apis/
+
+Angular indexedDB library use for IndexedDB: https://github.com/bramski/angular-indexedDB
+
+Dave Atchley's blog for Promise help: http://www.datchley.name/promise-patterns-anti-patterns/
+
+StackOverflow post helped with creating an Angular filter for formatting BART stop names: http://stackoverflow.com/questions/30207272/capitalize-the-first-letter-of-string-in-angularjs
+
