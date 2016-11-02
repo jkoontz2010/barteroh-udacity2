@@ -1,7 +1,11 @@
 # barteroh-udacity2
 Offline-capable/progressive web app for getting a BART route schedule.
 
-To view offline capabaility, run the app locally, select a Departure and Arrival stop, kill the server after the routes are displayed, refresh the page.
+To view offline capabaility:
+1. run the app locally
+2. select a Departure and Arrival stop
+3. kill the server after the routes are displayed
+4. refresh the page.
 
 ## Stack
 * ES6 w/Babel
